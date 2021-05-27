@@ -6,6 +6,7 @@ Purpose:
     - Write integers to a file in parallel
 Usage:
     ./binary <num_integers> <file_prefix> <num_cores>
+
 )";
 
 std::tuple<uint32_t, std::string, uint16_t> parseArgs(int argc, char **argv) {
@@ -25,26 +26,29 @@ std::tuple<uint32_t, std::string, uint16_t> parseArgs(int argc, char **argv) {
 }
 
 int writeFile(uint16_t process_num, uint32_t num_integers,
-              std::string file_prefix, std::vector<int> &nums) {
-    // This
-    std::cout << "I am process_num: " << process_num << std::endl;
-    if (process_num == 8) {
-        std::cout << "I am process_num 1, sleeping" << std::endl;
-        std::this_thread::sleep_for(std::chrono::seconds(5));
-    }
-    nums[process_num] = process_num * 8;
-    return process_num;
-}
+              std::string file_prefix) {
 
-void test() { std::cout << "This is a test" << std::endl; }
+    std::stringstream filename;
+    filename << file_prefix << "_" << process_num << ".data";
+    std::ofstream file(filename.str());
+    if (file.is_open()) {
+        std::cout << "Opened file: " << filename.str() << std::endl;
+        for (uint64_t ii = 0; ii < num_integers; ii++) {
+            file << ii << "\n";
+        }
+        std::cout << "Done writing file: " << filename.str() << std::endl;
+    }
+    // std::this_thread::sleep_for(std::chrono::seconds(5));
+    return 0;
+}
 
 void runThreads(uint16_t num_processes, uint32_t num_integers,
                 std::string file_prefix) {
     std::vector<std::thread> threads;
-    std::vector<int> nums(num_processes);
     for (int ii = 0; ii < num_processes; ii++) {
-        threads.push_back(std::thread(writeFile, ii, num_integers, file_prefix,
-                                      std::ref(nums)));
+        // std::ref(nums); // for passing ref into thread.
+        threads.push_back(
+            std::thread(writeFile, ii, num_integers, file_prefix));
         // t.join();
     }
 
@@ -53,18 +57,7 @@ void runThreads(uint16_t num_processes, uint32_t num_integers,
         if (thread.joinable()) {
             thread.join();
         }
-        std::cout << "----------------- " << ii++ << " -----------------"
-                  << std::endl;
-        int jj = 0;
-        for (const int num : nums) {
-            std::cout << jj++ << " num num: " << num << std::endl;
-        }
     }
-
-    for (const int num : nums) {
-        std::cout << "num num: " << num << std::endl;
-    }
-    // this
 }
 
 int main(int argc, char **argv) {
